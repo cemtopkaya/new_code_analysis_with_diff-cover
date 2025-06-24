@@ -1,0 +1,44 @@
+# Node.js-based, Debian-derived build environment for CI/CD
+# This image is based on the official Node.js image and includes a JRE for SonarQube for IDE extension
+# and Docker CLI for building and pushing images.
+
+FROM node:23-slim
+
+# ensure terminal displays Turkish characters correctly when the container starts
+ENV LANG=C.UTF-8
+
+# system update and some useful tools
+# JRE is required for the SonarQube for IDE extension
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+        curl \
+        tree \
+        git \
+        openjdk-17-jre-headless \
+        docker.io \
+        # Trivy kurulumu
+        wget \
+        gnupg \
+        zip \
+        jq \
+        lsb-release && \
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg && \
+        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main" > /etc/apt/sources.list.d/trivy.list && \
+        apt-get update && \
+        apt-get install -y trivy
+
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# install global npm packages
+# Vite is a build tool that aims to provide a faster and leaner development experience for modern web projects
+# SonarQube scanner is a tool to scan your code for quality and security issues
+# dotenv is a zero-dependency module that loads environment variables from a .env file into process.env
+RUN npm install -g \
+        vite \
+        sonarqube-scanner \
+        dotenv-cli
+
+# working directory
+WORKDIR /workspace

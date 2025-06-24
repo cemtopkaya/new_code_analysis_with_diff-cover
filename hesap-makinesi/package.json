@@ -1,0 +1,16 @@
+{
+  "name": "hesap-makinesi",
+  "version": "1.2.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest --collect-coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^30.0.2"
+  }
+}

@@ -1,0 +1,88 @@
+# Node.js-based, Debian-derived development environment
+FROM node:19.8.1-bullseye
+
+# İstediğiniz UID ve GID ile kullanıcı oluşturun
+ARG USERNAME=node
+ARG USER_UID=502
+ARG USER_GID=20
+
+# RUN groupmod -g $USER_GID $USERNAME
+RUN usermod -u $USER_UID -g $USER_GID $USERNAME
+
+# ensure terminal displays Turkish characters correctly when the container starts
+ENV LANG=C.UTF-8
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+    # Temel araçlar
+      curl \
+      tree \
+      zip \
+      jq \
+      nano \
+    # Java Çalışma Zamanı Ortamı
+    # JRE is required for the SonarQube for IDE extension
+      openjdk-17-jre-headless \
+    # Docker CLI
+      docker.io \
+    # Geliştirme araçları
+      build-essential \
+      git \
+    # Ağ araçları
+      net-tools \
+      iputils-ping \
+      tcpdump \
+    # Sistem izleme araçları
+      procps \
+    # Python3 ve pip'i kur (debian tabanlı olduğu için apt-get kullanıyoruz)
+      python3 \
+      python3-pip \
+    # Trivy kurulumu
+      wget \
+      gnupg \
+      lsb-release && \
+      wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg && \
+      echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main" > /etc/apt/sources.list.d/trivy.list && \
+      apt-get update && \
+      apt-get install -y trivy
+
+# RUN apt-get clean && \
+#     rm -rf /var/lib/apt/lists/*
+
+# diff-cover'ı pip ile kur
+RUN pip install diff-cover
+
+# install vite globally (optional)
+RUN npm install -g \
+        dotenv-cli \
+        npm-run-all \
+        sonarqube-scanner \
+        vite
+
+# Konsolda git komutlarını ve çıktılarını renklendirmek için eza kurulumu
+# eza, lg komutunun renkli ve daha kullanıcı dostu bir versiyonudur
+# eza'nın renkli çıktısını kullanabilmek için git config ayarlarını yap
+RUN mkdir -p /tmp/eza/ && \
+    cd /tmp/eza && \
+    # eza'nın en son sürümünü indir 
+    curl -LO "https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz" && \
+    tar -xzf eza_x86_64-unknown-linux-gnu.tar.gz && \
+    install -m 755 eza /usr/local/bin/eza && \
+    # eza'nın renkli çıktısını kullanabilmek için gerekli olan eza config dosyasını oluştur
+    # eza kurulumundan sonra, eza'nın renkli çıktısını kullanabilmek için git config ayarlarını yap
+    git config --global color.ui auto && \
+    git config --global color.status auto && \
+    git config --global color.branch auto && \
+    git config --global color.interactive auto && \
+    git config --global color.diff auto && \
+    rm -rf /tmp/eza && \
+    echo "alias lg='eza -al --git --icons --group-directories-first'" >> /root/.bashrc
+
+WORKDIR /workspace
+
+RUN echo "alias ll='ls -la'" >> /root/.bashrc \
+    && echo "alias l='ls -l'" >> /root/.bashrc \
+    && echo "alias la='ls -la'" >> /root/.bashrc \
+    && echo "alias lla='ls -la'" >> /root/.bashrc \
+    && echo "alias ls='ls --color=auto'" >> /root/.bashrc 

@@ -1,0 +1,25 @@
+# This file is used to define the services and networks for the development environment.
+x-common-env: &common-variables
+  # Containers will be setted to the same time zone as the host
+  TZ: "Europe/Istanbul"
+
+services:
+  nodeContainer:
+    container_name: nodeContainer
+    image: telenity/devcontainer/react:latest
+    build:
+      context: ./services/devcontainer/build
+      dockerfile: Dockerfile.dev
+      args:
+        USER_UID: 502
+        USER_GID: 20
+    # user: "502:20"
+    volumes:
+      - ../:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    environment:
+      <<: *common-variables
+      PYTHONPATH: '/workspace'
+    # networks:
+    #   - devnet
